@@ -1,0 +1,13 @@
+{
+  "name": "agent-peek",
+  "version": "0.4.1",
+  "description": "Inspect concise progress snapshots from working Pi, Claude Code, and Codex CLI sessions",
+  "skills": "./codex-skills",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Agent Peek",
+    "shortDescription": "Inspect working agent sessions in this directory",
+    "developerName": "A5yncX",
+    "websiteURL": "https://github.com/A5yncX/agent-peek"
+  }
+}

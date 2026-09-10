@@ -1,0 +1,10 @@
+{
+  "name": "agent-peek",
+  "version": "0.4.1",
+  "description": "Inspect concise progress snapshots from working Pi, Claude Code, and Codex CLI sessions",
+  "author": { "name": "A5yncX" },
+  "homepage": "https://github.com/A5yncX/agent-peek",
+  "repository": "https://github.com/A5yncX/agent-peek.git",
+  "license": "MIT",
+  "keywords": ["session", "progress", "pi", "claude-code", "codex"]
+}

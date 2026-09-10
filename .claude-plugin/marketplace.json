@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "agent-peek-local",
+  "version": "0.4.1",
+  "description": "Local Agent Peek marketplace",
+  "owner": { "name": "A5yncX" },
+  "plugins": [{
+    "name": "agent-peek",
+    "description": "Inspect working agent sessions in the same directory",
+    "source": "./"
+  }]
+}
