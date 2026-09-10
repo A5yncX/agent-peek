@@ -1,5 +1,5 @@
 {
-  "name": "@a5yncx/agent-peek",
+  "name": "@asyncx/agent-peek",
   "version": "0.4.1",
   "description": "Read-only progress snapshots for Pi, Claude Code, and Codex CLI sessions",
   "type": "module",
