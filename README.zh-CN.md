@@ -12,10 +12,12 @@
 
 | 工具 | 安装 | 使用 |
 | --- | --- | --- |
-| Pi | `pi install git:github.com/A5yncX/agent-peek`，每个 Pi 窗口执行 `/reload` | `/peek` |
+| Pi | `pi install npm:@a5yncx/agent-peek`，每个 Pi 窗口执行 `/reload` | `/peek` |
 | Claude Code | `/plugin marketplace add A5yncX/agent-peek`，再执行 `/plugin install agent-peek@agent-peek-local` | `/agent-peek:peek` |
 | Codex CLI 0.153+ | `codex plugin marketplace add A5yncX/agent-peek`，再执行 `codex plugin add agent-peek@agent-peek-local` | `$agent-peek:peek` |
-| 普通终端 | `npm install -g github:A5yncX/agent-peek` | `agent-peek` |
+| 普通终端 | `npm install -g @a5yncx/agent-peek` | `agent-peek` |
+
+npm 正式发布前，可以直接从 GitHub 安装：`pi install git:github.com/A5yncX/agent-peek`。
 
 Claude Code/Codex 安装后需要重启，让生命周期 Hook 开始登记状态。宿主可能要求信任本地 Hook；插件拥有当前用户权限，请先检查源码。
 

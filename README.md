@@ -12,10 +12,12 @@
 
 | Host | Install | Invoke |
 | --- | --- | --- |
-| Pi | `pi install git:github.com/A5yncX/agent-peek` then `/reload` in each Pi window | `/peek` |
+| Pi | `pi install npm:@a5yncx/agent-peek` then `/reload` in each Pi window | `/peek` |
 | Claude Code | `/plugin marketplace add A5yncX/agent-peek` then `/plugin install agent-peek@agent-peek-local` | `/agent-peek:peek` |
 | Codex CLI 0.153+ | `codex plugin marketplace add A5yncX/agent-peek` then `codex plugin add agent-peek@agent-peek-local` | `$agent-peek:peek` |
-| Shell | `npm install -g github:A5yncX/agent-peek` | `agent-peek` |
+| Shell | `npm install -g @a5yncx/agent-peek` | `agent-peek` |
+
+Install directly from GitHub before the npm release with `pi install git:github.com/A5yncX/agent-peek`.
 
 Restart Claude Code/Codex after installation so their lifecycle hooks start. Hosts may ask you to trust the local hooks. Review them first: plugins run with your user permissions.
 

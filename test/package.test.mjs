@@ -9,6 +9,9 @@ test('Pi, Claude Code, Codex and marketplace manifests stay version-aligned', as
     json('../package.json'), json('../.codex-plugin/plugin.json'), json('../.claude-plugin/plugin.json'),
     json('../.claude-plugin/marketplace.json'), json('../hooks/hooks.json'),
   ]);
+  assert.equal(pkg.name, '@a5yncx/agent-peek');
+  assert.equal(pkg.publishConfig.access, 'public');
+  assert.ok(pkg.keywords.includes('pi-package'));
   assert.equal(codex.hooks, './hooks/hooks.json');
   assert.equal(codex.skills, './codex-skills');
   assert.equal(pkg.version, codex.version);
