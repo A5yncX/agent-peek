@@ -57,6 +57,21 @@ function fit(text, width) {
   return result;
 }
 
+export async function showResultWindow(ctx, lines, labels) {
+  if (ctx.mode !== 'tui') return false;
+  await ctx.ui.custom((_tui, theme, _keybindings, done) => ({
+    render(width) {
+      return [labels.title, ...lines, labels.close].map((line, index) => styleLine(theme,
+        fit(line, Math.max(1, width)), ['accent', 'accent', 'accent', 'success', 'accent', 'warning', 'text'][index] ?? 'text'));
+    },
+    invalidate() {},
+    handleInput(data) {
+      if (['\r', '\n', '\x1b', 'q', 'Q'].includes(data)) done(undefined);
+    },
+  }), { overlay: true, overlayOptions: { anchor: 'center', width: 72, minWidth: 32, maxHeight: 12, margin: 1 } });
+  return true;
+}
+
 export function resultComponent(lines, theme) {
   const safe = Array.isArray(lines) ? lines.slice(0, 5) : ['Agent Peek：结果不可用'];
   return {

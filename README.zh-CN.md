@@ -2,7 +2,7 @@
 
 **查看同一工作目录中正在运行的 Pi、Claude Code 和 Codex CLI 会话概况。**
 
-[English (default)](README.md) · [兼容性调研](docs/compatibility.md)
+[English (default)](README.md) · [更新记录](CHANGELOG.md) · [兼容性调研](docs/compatibility.md)
 
 [![CI](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml/badge.svg)](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -17,7 +17,7 @@
 | Codex CLI 0.153+ | `codex plugin marketplace add A5yncX/agent-peek`，再执行 `codex plugin add agent-peek@agent-peek-local` | `$agent-peek:peek` |
 | 普通终端 | `npm install -g @asyncx/agent-peek` | `agent-peek` |
 
-npm 正式发布前，可以直接从 GitHub 安装：`pi install git:github.com/A5yncX/agent-peek`。
+也支持从 GitHub 安装：`pi install git:github.com/A5yncX/agent-peek`。
 
 Claude Code/Codex 安装后需要重启，让生命周期 Hook 开始登记状态。宿主可能要求信任本地 Hook；插件拥有当前用户权限，请先检查源码。
 
@@ -39,11 +39,39 @@ Pi 的可选 AI 摘要可以使用独立模型，不会切换当前会话模型�
 ```json
 {
   "language": "zh",
-  "model": "my-provider/fast-model"
+  "model": "my-provider/fast-model",
+  "confirmBeforeSummary": true,
+  "resultDisplay": "window"
 }
 ```
 
-格式为 `provider/model-id`。修改后下一次 `/peek` 立即生效，无需 `/reload`；删除 `model` 字段则跟随 Pi 当前模型。模型不存在或不可用时，插件输出本地概况，不静默改用其他模型。Claude Code、Codex 和终端入口使用本地确定性提取，不调用此模型。
+模型格式为 `provider/model-id`。修改后下一次 `/peek` 立即生效，无需 `/reload`；删除 `model` 字段则跟随 Pi 当前模型。模型不存在或不可用时，插件输出本地概况，不静默改用其他模型。Claude Code、Codex 和终端入口使用本地确定性提取，不调用此模型。
+
+## Pi 选项
+
+输入 `/peek options` 打开交互设置，也可以直接执行：
+
+```text
+/peek options confirm on
+/peek options confirm off
+/peek options display window
+/peek options display conversation
+```
+
+| 配置 | 默认值 | 行为 |
+| --- | --- | --- |
+| `confirmBeforeSummary` | `true` | 每次向模型发送过滤文本前确认。通过命令关闭时必须额外进行一次安全确认。 |
+| `resultDisplay` | `"window"` | 用中央可关闭窗口展示；设为 `"conversation"` 时写入持久的 TUI 自定义对话条目。 |
+
+结果窗口可用 Enter、Escape 或 `q` 关闭。RPC 不支持 Overlay 时自动退回对话输出。窗口模式不会把结果写入会话；对话模式的自定义条目也不会进入模型上下文。
+
+### v0.5.0 优化
+
+- 新增 `/peek options` 设置菜单和直接参数。
+- 关闭后续摘要确认前增加明确的二次确认。
+- Pi 默认结果从对话条目改为参考 `pi-mcp-adapter` 的中央 Overlay 窗口。
+- 保留对话模式，用于持久结果和 RPC 降级。
+- 查询期间继续在输入框下显示动态 `👀`，打开结果前自动移除。
 
 ## 自动选择
 
@@ -66,15 +94,15 @@ Blocker  Not confirmed
 
 切换中文后标签和摘要改为中文。只有明确的完成数/总数或当前消息中的 Markdown 任务清单才显示百分比；普通分数、F1、token 和模型猜测都不算。计数是会话中的记录，不代表独立验证；不推断 ETA。
 
-Pi 查询期间在输入框下方动态显示 `👀`，结束后消失，五行结果写入对话区但不进入模型上下文。Claude/Codex 使用各自命令或 Skill 的工作提示，并返回共享 CLI 的本地结果。
+Pi 查询期间在输入框下方动态显示 `👀`，结束后消失；结果根据配置显示在窗口或对话中。Claude/Codex 使用各自命令或 Skill 的工作提示，并返回共享 CLI 的本地结果。
 
-Pi 还支持：`/peek self|local|refresh|preview|cancel|clear|<id前缀>`。
+Pi 还支持：`/peek self|local|refresh|preview|options|cancel|clear|<id前缀>`。
 
 ## 隐私与限制
 
 - 目标会话只读；不会恢复、修复、迁移、控制目标 Agent，也不会给它发送消息。
 - 运行状态和偏好只保存在仓库外的 `~/.agent-peek/`。发布包不包含会话文件、本机配置、凭据或生成的摘要。
-- Pi 可选 AI 摘要每次先确认，并删除 reasoning、图片、工具参数和工具结果正文；普通文本仍可能含秘密。Claude/Codex/终端使用确定性的本地提取，不额外调用模型上传会话。
+- Pi 可选 AI 摘要默认逐次确认；关闭确认需要明确二次确认，之后可能在不再次提示的情况下计费。上传前删除 reasoning、图片、工具参数和工具结果正文；普通文本仍可能含秘密。Claude/Codex/终端使用确定性的本地提取，不额外调用模型上传会话。
 - 读取前核对 cwd 和会话 ID；限制 64 MiB/文件、8 MiB/行、100,000 条规范记录。支持 Pi v2/v3、Claude Code JSONL 和 Codex rollout JSONL。
 - 外部格式可能随版本变化；未知记录跳过，损坏分支会禁用百分比。PID 存活只证明宿主进程存在，不证明任务未卡住。
 - Pi TUI 仅使用通过 4.5:1 RGB 对比度检查的主题色，否则退回加粗；状态不只靠颜色表达。

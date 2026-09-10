@@ -2,7 +2,7 @@
 
 **Inspect concise progress from working Pi, Claude Code, and Codex CLI sessions in the same directory.**
 
-[简体中文](README.zh-CN.md) · [Compatibility research](docs/compatibility.md)
+[简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Compatibility research](docs/compatibility.md)
 
 [![CI](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml/badge.svg)](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -17,7 +17,7 @@
 | Codex CLI 0.153+ | `codex plugin marketplace add A5yncX/agent-peek` then `codex plugin add agent-peek@agent-peek-local` | `$agent-peek:peek` |
 | Shell | `npm install -g @asyncx/agent-peek` | `agent-peek` |
 
-Install directly from GitHub before the npm release with `pi install git:github.com/A5yncX/agent-peek`.
+Git installs are also supported: `pi install git:github.com/A5yncX/agent-peek`.
 
 Restart Claude Code/Codex after installation so their lifecycle hooks start. Hosts may ask you to trust the local hooks. Review them first: plugins run with your user permissions.
 
@@ -39,11 +39,39 @@ Pi's optional AI summary can use a dedicated model without switching the current
 ```json
 {
   "language": "en",
-  "model": "my-provider/fast-model"
+  "model": "my-provider/fast-model",
+  "confirmBeforeSummary": true,
+  "resultDisplay": "window"
 }
 ```
 
-The format is `provider/model-id`. Changes apply on the next `/peek` without `/reload`. Remove `model` to follow Pi's current model. If the configured model is unavailable, Agent Peek shows the local snapshot instead of silently falling back. Claude Code, Codex, and shell entry points remain deterministic and do not call this model.
+The model format is `provider/model-id`. Changes apply on the next `/peek` without `/reload`. Remove `model` to follow Pi's current model. If the configured model is unavailable, Agent Peek shows the local snapshot instead of silently falling back. Claude Code, Codex, and shell entry points remain deterministic and do not call this model.
+
+## Pi options
+
+Run `/peek options` for the interactive settings menu, or set values directly:
+
+```text
+/peek options confirm on
+/peek options confirm off
+/peek options display window
+/peek options display conversation
+```
+
+| Option | Default | Behavior |
+| --- | --- | --- |
+| `confirmBeforeSummary` | `true` | Ask before each filtered model upload. Turning it off through the command requires one explicit safety confirmation. |
+| `resultDisplay` | `"window"` | Show a centered, dismissible overlay. `"conversation"` appends a durable TUI-only custom entry instead. |
+
+The result window closes with Enter, Escape, or `q`. RPC cannot render overlays and automatically falls back to conversation output. Window mode does not persist the result in the transcript; conversation entries remain excluded from model context.
+
+### New in 0.5.0
+
+- Added the `/peek options` menu and direct option arguments.
+- Added explicit confirmation before disabling future summary prompts.
+- Changed Pi's default result display from a conversation entry to a centered overlay inspired by `pi-mcp-adapter` panels.
+- Preserved conversation mode for durable results and RPC fallback.
+- Kept the below-editor animated `👀` indicator during lookup; it is removed before either result view opens.
 
 ## Routing
 
@@ -66,15 +94,15 @@ Blocker  Not confirmed
 
 Only explicit completed/total text or a current-message Markdown checklist creates a percentage. Counts are recorded claims, not verification. Ordinary fractions, scores, token usage and model guesses never create progress. No ETA is inferred.
 
-In Pi, `👀` animates below the editor while lookup runs, then disappears. The result is appended as a durable custom entry that does not enter model context. Claude/Codex use their native command/skill working UI and return the shared CLI output.
+In Pi, `👀` animates below the editor while lookup runs, then disappears. The result opens in the configured window or conversation view. Claude/Codex use their native command/skill working UI and return the shared CLI output.
 
-Pi extras: `/peek self`, `/peek local`, `/peek refresh`, `/peek preview`, `/peek cancel`, `/peek clear`, and `/peek <id-prefix>`.
+Pi extras: `/peek self`, `/peek local`, `/peek refresh`, `/peek preview`, `/peek options`, `/peek cancel`, `/peek clear`, and `/peek <id-prefix>`.
 
 ## Privacy and limits
 
 - Target transcripts are read-only. Agent Peek does not resume, repair, migrate, control, or message the target agent.
 - Runtime state and preferences stay under `~/.agent-peek/`, outside this repository. Session files, local configuration, credentials, and generated summaries are excluded from the published package.
-- Pi's optional AI summary asks for consent. Reasoning, images, tool arguments and tool-result bodies are removed; text can still contain secrets. Claude/Codex/shell use local deterministic extraction and do not upload another model call.
+- Pi's optional AI summary asks for consent by default; disabling that prompt requires explicit confirmation and can incur charges without another prompt. Reasoning, images, tool arguments and tool-result bodies are removed; text can still contain secrets. Claude/Codex/shell use local deterministic extraction and do not upload another model call.
 - Readers validate cwd/session identity and bound input to 64 MiB/file, 8 MiB/line and 100,000 normalized entries. Pi v2/v3, Claude Code JSONL, and Codex rollout JSONL are supported.
 - Foreign formats are version-sensitive. Unknown records are skipped; malformed ancestry disables numeric progress. Liveness proves only that a host process exists, not that useful progress is occurring.
 - TUI colors use Pi theme tokens only after 4.5:1 RGB contrast verification; otherwise output falls back to bold. Status never relies on color alone.

@@ -7,11 +7,11 @@ import { fileURLToPath } from 'node:url';
 import { clean, discover, readSession, projectEntry, snapshot, explicitProgress,
   progressBar, validateSummary, compactCard } from '../core.ts';
 import { startPresence, liveSessions } from '../presence.ts';
-import { contrast, styleLine, startIndicator } from '../card.ts';
+import { contrast, styleLine, showResultWindow, startIndicator } from '../card.ts';
 import { discoverAgents, readAgentSession } from '../adapters.ts';
-import { getConfig, getLanguage, getSummaryModel, setLanguage } from '../i18n.ts';
+import { getConfig, getLanguage, getPeekOptions, getSummaryModel, setLanguage } from '../i18n.ts';
 import { execFileSync, spawn } from 'node:child_process';
-import extension from '../index.ts';
+import extension, { configureOptions } from '../index.ts';
 
 const header = cwd => ({ type: 'session', version: 3, id: 'other-id', cwd });
 const msg = (id, parentId, role, content, extra = {}) => ({ type: 'message', id, parentId,
@@ -130,6 +130,7 @@ test('language defaults to English, persists Chinese, and changes card labels', 
   assert.ok(compactCard(data).some(line => line.startsWith('Goal  ')));
   await writeFile(join(process.env.AGENT_PEEK_HOME, 'config.json'), JSON.stringify({ language: 'en', model: 'example/fast-model' }));
   assert.equal(getSummaryModel(), 'example/fast-model');
+  assert.deepEqual(getPeekOptions(), { confirmBeforeSummary: true, resultDisplay: 'window' });
   setLanguage('zh');
   assert.equal(getLanguage(), 'zh');
   assert.equal(getConfig().model, 'example/fast-model');
@@ -144,20 +145,27 @@ function harness(dir, options = {}) {
   const entries = [];
   const renderers = {};
   const placements = [];
+  const overlays = [];
   let calls = 0;
   const pi = { on: (name, fn) => { callbacks[name] = fn; },
     registerCommand: (name, command) => { callbacks[name] = command.handler; },
     registerEntryRenderer: (name, renderer) => { renderers[name] = renderer; },
     appendEntry: (customType, data) => { entries.push({ customType, data }); } };
   const ctx = {
-    cwd: dir, hasUI: true, mode: 'rpc', isIdle: () => true,
+    cwd: dir, hasUI: true, mode: options.mode ?? 'rpc', isIdle: () => true,
     model: { provider: 'test', id: 'test' },
     sessionManager: { getSessionDir: () => dir, getSessionId: () => 'self',
       getSessionFile: () => join(dir, 'self.jsonl'),
       getBranch: () => [msg('u', null, 'user', 'Run tests')] },
     ui: { setWidget: (_, lines, options) => { widgets.push(lines); placements.push(options?.placement); }, setStatus() {},
       notify: text => notices.push(text), confirm: async () => options.consent ?? false,
-      select: async (_, choices) => choices[0], editor: async () => undefined },
+      select: async (_, choices) => choices[0], editor: async () => undefined,
+      custom: async (factory, config) => {
+        overlays.push(config);
+        const theme = { bold: value => value, bg: (_name, value) => value, fg: (_name, value) => value,
+          getBgAnsi: () => '\\x1b[48;2;0;0;0m', getFgAnsi: () => '\\x1b[38;2;255;255;255m' };
+        factory({}, theme, {}, () => {});
+      } },
     modelRegistry: { find: (provider, id) => options.findModel?.(provider, id), complete: async (...args) => {
       calls++;
       if (options.complete) return options.complete(...args);
@@ -166,7 +174,7 @@ function harness(dir, options = {}) {
     } },
   };
   extension(pi);
-  return { callbacks, ctx, widgets, notices, entries, renderers, placements, calls: () => calls };
+  return { callbacks, ctx, widgets, notices, entries, renderers, placements, overlays, calls: () => calls };
 }
 
 test('command local mode / consent / model request isolation / clear', async () => fixture(async dir => {
@@ -229,6 +237,54 @@ test('/peek language switches and persists the shared interface language', async
   assert.match(h.notices.at(-1), /English/);
   assert.equal(h.entries.length, 0);
 }));
+
+test('/peek options safely controls confirmation and result placement', async () => fixture(async dir => {
+  const rejected = harness(dir, { consent: false });
+  await configureOptions('confirm off', rejected.ctx, 'en');
+  assert.equal(getPeekOptions().confirmBeforeSummary, true);
+
+  const accepted = harness(dir, { consent: true });
+  await configureOptions('confirm off', accepted.ctx, 'en');
+  await configureOptions('display conversation', accepted.ctx, 'en');
+  assert.deepEqual(getPeekOptions(), { confirmBeforeSummary: false, resultDisplay: 'conversation' });
+  await accepted.callbacks.peek('self', accepted.ctx);
+  assert.equal(accepted.calls(), 1);
+  assert.equal(accepted.entries.length, 1);
+
+  await configureOptions('confirm on', accepted.ctx, 'en');
+  await configureOptions('display window', accepted.ctx, 'en');
+  assert.deepEqual(getPeekOptions(), { confirmBeforeSummary: true, resultDisplay: 'window' });
+  await configureOptions('bad value', accepted.ctx, 'en');
+  assert.match(accepted.notices.at(-1), /Usage/);
+}));
+
+test('Pi defaults to window results and can switch to durable conversation output', async () => fixture(async dir => {
+  const h = harness(dir, { mode: 'tui', consent: false });
+  await h.callbacks.peek('self', h.ctx);
+  assert.equal(h.overlays.length, 1);
+  assert.equal(h.entries.length, 0);
+  await configureOptions('display conversation', h.ctx, 'en');
+  await h.callbacks.peek('self', h.ctx);
+  assert.equal(h.overlays.length, 1);
+  assert.equal(h.entries.length, 1);
+}));
+
+test('result window uses a centered dismissible overlay', async () => {
+  let closed = false, rendered = [], overlay;
+  const theme = { bold: value => value, bg: (_name, value) => value, fg: (_name, value) => value,
+    getBgAnsi: () => '\\x1b[48;2;0;0;0m', getFgAnsi: () => '\\x1b[38;2;255;255;255m' };
+  const ctx = { mode: 'tui', ui: { custom: async (factory, options) => {
+    overlay = options;
+    const component = factory({}, theme, {}, () => { closed = true; });
+    rendered = component.render(80);
+    component.handleInput('\r');
+  } } };
+  assert.equal(await showResultWindow(ctx, ['Goal  Test'], { title: 'Agent Peek', close: 'Enter: close' }), true);
+  assert.equal(overlay.overlay, true);
+  assert.equal(overlay.overlayOptions.anchor, 'center');
+  assert.ok(rendered.some(line => line.includes('Goal  Test')));
+  assert.equal(closed, true);
+});
 
 test('automatic routing: self first, one working peer direct, multiple working peers select, no idle fallback', async () => {
   const cases = [

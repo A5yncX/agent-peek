@@ -1,13 +1,46 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { randomUUID } from 'node:crypto';
 import { startPresence } from './presence.ts';
-import { resultComponent, startIndicator } from './card.ts';
+import { resultComponent, showResultWindow, startIndicator } from './card.ts';
 import { discoverAgents, readAgentSession } from './adapters.ts';
-import { getLanguage, getSummaryModel, setLanguage, t } from './i18n.ts';
+import { getLanguage, getPeekOptions, getSummaryModel, setLanguage, setPeekOptions, t } from './i18n.ts';
 import { projectEntry, snapshot, compactCard, clip, clean,
   SUMMARY_PROMPT, validateSummary } from './core.ts';
 
-const HELP = '/peek [session-id | self | local | refresh | preview | language [en|zh] | clear | cancel]';
+const HELP = '/peek [session-id | self | local | refresh | preview | language [en|zh] | options [confirm on|off | display window|conversation] | clear | cancel]';
+
+export async function configureOptions(args, ctx, language) {
+  const saveConfirm = async enabled => {
+    if (!enabled && getPeekOptions().confirmBeforeSummary &&
+      !await ctx.ui.confirm(t(language, 'disableConfirmTitle'), t(language, 'disableConfirmBody'))) return;
+    setPeekOptions({ confirmBeforeSummary: enabled });
+    ctx.ui.notify(t(language, 'optionsSaved'), 'info');
+  };
+  const parts = args.trim().split(/\s+/).filter(Boolean);
+  if (parts.length) {
+    if (parts.length === 2 && parts[0] === 'confirm' && ['on', 'off'].includes(parts[1])) return saveConfirm(parts[1] === 'on');
+    if (parts.length === 2 && parts[0] === 'display' && ['window', 'conversation'].includes(parts[1])) {
+      setPeekOptions({ resultDisplay: parts[1] });
+      ctx.ui.notify(t(language, 'optionsSaved'), 'info');
+      return;
+    }
+    ctx.ui.notify(t(language, 'invalidOption'), 'warning');
+    return;
+  }
+  for (;;) {
+    const options = getPeekOptions();
+    const confirmation = t(language, 'confirmationOption', options.confirmBeforeSummary);
+    const display = t(language, 'displayOption', options.resultDisplay);
+    const close = t(language, 'closeOptions');
+    const choice = await ctx.ui.select(t(language, 'optionsTitle'), [confirmation, display, close]);
+    if (!choice || choice === close) return;
+    if (choice === confirmation) await saveConfirm(!options.confirmBeforeSummary);
+    else {
+      setPeekOptions({ resultDisplay: options.resultDisplay === 'window' ? 'conversation' : 'window' });
+      ctx.ui.notify(t(language, 'optionsSaved'), 'info');
+    }
+  }
+}
 
 export default function (pi: ExtensionAPI) {
   pi.registerEntryRenderer('agent-peek-result', (entry, _options, theme) =>
@@ -62,6 +95,11 @@ export default function (pi: ExtensionAPI) {
         return;
       }
       if (arg === 'help') { ctx.ui.notify(HELP, 'info'); return; }
+      if (arg === 'options' || arg.startsWith('options ')) {
+        try { await configureOptions(arg.slice('options'.length), ctx, language); }
+        catch { ctx.ui.notify(t(language, 'registryError'), 'warning'); }
+        return;
+      }
       if (arg === 'language' || arg.startsWith('language ')) {
         const requested = arg.split(/\s+/)[1];
         const next = requested || await ctx.ui.select(t(language, 'languageTitle'), ['English', '中文']);
@@ -81,7 +119,7 @@ export default function (pi: ExtensionAPI) {
       const stopIndicator = startIndicator(ctx);
       let timer: ReturnType<typeof setTimeout> | undefined;
       let timedOut = false;
-      let publishLocal: (() => void) | undefined;
+      let publishLocal: (() => Promise<void>) | undefined;
       try {
         const selfId = ctx.sessionManager.getSessionId();
         const selfState = waiting ? 'waiting' : activity === 'busy' || !ctx.isIdle() ? 'busy' : 'idle';
@@ -125,12 +163,16 @@ export default function (pi: ExtensionAPI) {
         }
         if (!alive()) return;
         const runtimeState = target === 'self' ? selfState : session?.activity;
-        const publish = (summary?) => {
+        const publish = async (summary?) => {
           if (!alive()) return;
           const lines = compactCard(data, summary, runtimeState, language);
           lines[0] = `${target === 'self' ? t(language, 'currentSession') : t(language, 'otherSession')} · ${data.source} · ${lines[0]}`;
           stopIndicator();
-          pi.appendEntry('agent-peek-result', { lines, timestamp: Date.now() });
+          const options = getPeekOptions();
+          const shown = options.resultDisplay === 'window' && await showResultWindow(ctx, lines, {
+            title: t(language, 'resultTitle'), close: t(language, 'closeWindow'),
+          }).catch(() => false);
+          if (!shown) pi.appendEntry('agent-peek-result', { lines, timestamp: Date.now() });
           publishLocal = undefined;
         };
         publishLocal = () => publish();
@@ -138,22 +180,23 @@ export default function (pi: ExtensionAPI) {
           warning: data.warning, evidence: data.evidence }, null, 2);
         if (arg === 'preview') {
           await ctx.ui.editor(t(language, 'previewTitle'), payload);
-          publish();
+          await publish();
           return;
         }
-        if (arg === 'local') { publish(); return; }
+        if (arg === 'local') { await publish(); return; }
         const configuredModel = getSummaryModel();
         const separator = configuredModel?.indexOf('/') ?? -1;
         const model = configuredModel
           ? ctx.modelRegistry.find?.(configuredModel.slice(0, separator), configuredModel.slice(separator + 1))
           : ctx.model;
         if (!model || typeof ctx.modelRegistry.complete !== 'function') {
-          publish();
+          await publish();
           ctx.ui.notify(t(language, configuredModel ? 'configuredModelMissing' : 'noModel', configuredModel), 'warning');
           return;
         }
-        const consent = await ctx.ui.confirm(t(language, 'consentTitle'), t(language, 'consentBody', `${model.provider}/${model.id}`));
-        if (!consent || !alive()) { if (alive()) publish(); return; }
+        const consent = !getPeekOptions().confirmBeforeSummary ||
+          await ctx.ui.confirm(t(language, 'consentTitle'), t(language, 'consentBody', `${model.provider}/${model.id}`));
+        if (!consent || !alive()) { if (alive()) await publish(); return; }
         timer = setTimeout(() => { timedOut = true; controller.abort(); }, 60000);
         const response = await ctx.modelRegistry.complete(model, {
           systemPrompt: SUMMARY_PROMPT,
@@ -163,11 +206,11 @@ export default function (pi: ExtensionAPI) {
         if (response.stopReason !== 'stop') throw new Error(t(language, 'summaryFailed'));
         const text = response.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
         const summary = validateSummary(text, data.evidence);
-        publish(summary);
+        await publish(summary);
       } catch (error) {
         if (epoch === generation) {
           const hadLocalFallback = !!publishLocal;
-          if (!controller.signal.aborted || timedOut) publishLocal?.();
+          if (!controller.signal.aborted || timedOut) await publishLocal?.();
           ctx.ui.notify(controller.signal.aborted
             ? t(language, timedOut ? 'timeout' : 'cancelled')
             : hadLocalFallback ? t(language, 'summaryFailed')
