@@ -7,6 +7,7 @@
 - `/peek options` interactive settings menu.
 - Direct settings commands: `confirm on|off` and `display window|conversation`.
 - Centered Pi TUI result overlay, dismissible with Enter, Escape, or `q`.
+- Evidence-cited model estimates for progress percentage, confidence, ETA, completed work, and estimation basis.
 - Persistent configuration keys `confirmBeforeSummary` and `resultDisplay`.
 
 ### Changed
@@ -22,6 +23,7 @@
 - Target transcripts remain read-only.
 - Overlay and conversation results do not enter model context.
 - AI summaries still omit reasoning, images, tool arguments, and tool-result bodies.
+- Progress and ETA remain unknown when fewer than two meaningful progress signals exist; liveness or elapsed time alone is insufficient.
 
 ## 0.4.1
 

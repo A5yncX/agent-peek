@@ -166,7 +166,7 @@ export default function (pi: ExtensionAPI) {
         const publish = async (summary?) => {
           if (!alive()) return;
           const lines = compactCard(data, summary, runtimeState, language);
-          lines[0] = `${target === 'self' ? t(language, 'currentSession') : t(language, 'otherSession')} · ${data.source} · ${lines[0]}`;
+          lines[0] = `${target === 'self' ? t(language, 'currentSession') : t(language, 'otherSession')} · ${lines[0]}`;
           stopIndicator();
           const options = getPeekOptions();
           const shown = options.resultDisplay === 'window' && await showResultWindow(ctx, lines, {
@@ -176,7 +176,9 @@ export default function (pi: ExtensionAPI) {
           publishLocal = undefined;
         };
         publishLocal = () => publish();
-        const payload = JSON.stringify({ interfaceLanguage: language === 'zh' ? 'Chinese' : 'English', runtimeState, status: data.status, limitations: data.limitations,
+        const payload = JSON.stringify({ interfaceLanguage: language === 'zh' ? 'Chinese' : 'English', runtimeState,
+          observedAt: data.observedAt, taskStartedAt: data.taskStartedAt, taskElapsedMinutes: data.taskElapsedMinutes,
+          explicitProgress: data.progress, status: data.status, limitations: data.limitations,
           warning: data.warning, evidence: data.evidence }, null, 2);
         if (arg === 'preview') {
           await ctx.ui.editor(t(language, 'previewTitle'), payload);

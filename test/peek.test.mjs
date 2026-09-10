@@ -114,14 +114,16 @@ test('explicit progress only; labelled subtask scope, no fraction guesses', () =
   assert.match(progressBar(null), /unknown/);
 });
 
-test('model output must cite evidence; does not control progress bar', () => {
+test('model progress requires bounded estimates and cited evidence', () => {
   const evidence = [{ id: 'a' }];
   assert.throws(() => validateSummary('{"goal":{"text":"fake","evidenceId":"missing"}}', evidence));
-  const summary = validateSummary('{"goal":{"text":"Test","evidenceId":"a"},"progress":99}', evidence);
-  assert.equal(summary.progress, undefined);
+  assert.throws(() => validateSummary('{"progress":99}', evidence));
+  const summary = validateSummary('{"goal":{"text":"Test","evidenceId":"a"},"progress":{"percent":60,"confidence":"medium","basis":"three of five stages","evidenceIds":["a"],"etaMinutesLow":10,"etaMinutesHigh":25}}', evidence);
   const data = snapshot(project([msg('a', null, 'user', 'Test')]));
-  assert.ok(compactCard(data, summary).some(line => line.includes('Progress  Unknown')));
-  assert.equal(compactCard(data, summary).length, 5);
+  const card = compactCard(data, summary);
+  assert.ok(card.some(line => line.includes('60% · estimated · medium confidence')));
+  assert.ok(card.some(line => line.includes('~10 min–25 min')));
+  assert.equal(card.length, 8);
 });
 
 test('language defaults to English, persists Chinese, and changes card labels', async () => fixture(async () => {
@@ -399,7 +401,7 @@ test('Claude and Codex adapters discover only live same-directory sessions and n
     }
     const cli = fileURLToPath(new URL('../bin/agent-peek.mjs', import.meta.url));
     const output = execFileSync(process.execPath, [cli, 'peek', 'claude'], { cwd: dir, env: process.env, encoding: 'utf8' });
-    assert.match(output, /Other session · claude/);
+    assert.match(output, /Other session · ● Working · claude/);
     assert.match(output, /Goal  Build API/);
   } finally { active.forEach(p => p.stop()); }
 }));

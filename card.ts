@@ -61,8 +61,9 @@ export async function showResultWindow(ctx, lines, labels) {
   if (ctx.mode !== 'tui') return false;
   await ctx.ui.custom((_tui, theme, _keybindings, done) => ({
     render(width) {
-      return [labels.title, ...lines, labels.close].map((line, index) => styleLine(theme,
-        fit(line, Math.max(1, width)), ['accent', 'accent', 'accent', 'success', 'accent', 'warning', 'text'][index] ?? 'text'));
+      const framed = [`╭─ 👁 ${labels.title}`, ...lines.map(line => `│ ${line}`), `╰─ ${labels.close}`];
+      return framed.map((line, index) => styleLine(theme, fit(line, Math.max(1, width)),
+        ['accent', 'success', 'accent', 'text', 'success', 'accent', 'warning', 'warning', 'text', 'text'][index] ?? 'text'));
     },
     invalidate() {},
     handleInput(data) {
@@ -73,11 +74,12 @@ export async function showResultWindow(ctx, lines, labels) {
 }
 
 export function resultComponent(lines, theme) {
-  const safe = Array.isArray(lines) ? lines.slice(0, 5) : ['Agent Peek：结果不可用'];
+  const safe = Array.isArray(lines) ? lines.slice(0, 8) : ['Agent Peek: result unavailable'];
   return {
     render(width) {
-      return safe.map((line, i) => styleLine(theme, fit(line, Math.max(1, width)),
-        ['accent', 'accent', 'success', 'accent', 'warning'][i] ?? 'text'));
+      const framed = ['╭─ 👁 Agent Peek', ...safe.map(line => `│ ${line}`), '╰─'];
+      return framed.map((line, i) => styleLine(theme, fit(line, Math.max(1, width)),
+        ['accent', 'success', 'accent', 'text', 'success', 'accent', 'warning', 'warning', 'text', 'text'][i] ?? 'text'));
     },
     invalidate() {},
   };

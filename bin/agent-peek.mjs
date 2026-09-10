@@ -37,7 +37,7 @@ try {
   const session = working[0];
   const data = await readAgentSession(session, cwd);
   const lines = compactCard(data, undefined, session.activity, language);
-  lines[0] = `${t(language, 'otherSession')} · ${session.source} · ${lines[0]}`;
+  lines[0] = `${t(language, 'otherSession')} · ${lines[0]}`;
   const bold = process.stdout.isTTY && !process.env.NO_COLOR ? text => `\x1b[1m${text}\x1b[22m` : text => text;
   console.log(lines.map(bold).join('\n'));
 } catch (error) {
