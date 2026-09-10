@@ -13,6 +13,7 @@ Pi · Claude Code · Codex CLI
 [English (default)](README.md) · [更新记录](CHANGELOG.md) · [兼容性调研](docs/compatibility.md)
 
 [![CI](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml/badge.svg)](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml)
+[![npm 版本](https://img.shields.io/npm/v/@asyncx/agent-peek?logo=npm)](https://www.npmjs.com/package/@asyncx/agent-peek)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933.svg)](https://nodejs.org/)
 

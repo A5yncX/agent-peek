@@ -13,6 +13,7 @@ Read-only progress snapshots. One directory. No context switching.
 [简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Compatibility research](docs/compatibility.md)
 
 [![CI](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml/badge.svg)](https://github.com/A5yncX/agent-peek/actions/workflows/test.yml)
+[![npm version](https://img.shields.io/npm/v/@asyncx/agent-peek?logo=npm)](https://www.npmjs.com/package/@asyncx/agent-peek)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-339933.svg)](https://nodejs.org/)
 
