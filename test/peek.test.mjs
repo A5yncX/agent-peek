@@ -88,12 +88,13 @@ test('privacy projection, terminal controls, bounded model evidence', () => {
   const e = projectEntry(msg('a', null, 'assistant', [
     { type: 'thinking', thinking: 'PRIVATE THOUGHT', thinkingSignature: 'SIGNATURE' },
     { type: 'image', data: 'IMAGE DATA' },
-    { type: 'text', text: 'api_key=abc password="xyz" Bearer abcd' },
+    { type: 'text', text: 'api_key=abc password="xyz" Bearer abcd npm_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234' },
   ]));
   assert.ok(!JSON.stringify(e).includes('PRIVATE'));
   assert.ok(!JSON.stringify(e).includes('SIGNATURE'));
   assert.ok(!JSON.stringify(e).includes('IMAGE'));
   assert.ok(!e.text.includes('abc'));
+  assert.ok(!e.text.includes('npm_'));
   assert.equal(clean('\x1b[31mred\x1b[0m\u202e'), 'red');
   const entries = Array.from({ length: 100 }, (_, i) => projectEntry(msg(String(i), i ? String(i - 1) : null,
     i % 3 ? 'assistant' : 'user', 'x'.repeat(3000))));

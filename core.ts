@@ -16,7 +16,7 @@ export function clean(value) {
     .replace(/[\x00-\x08\x0b-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/g, '')
     .replace(/-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?-----END [^-]*PRIVATE KEY-----/g, '[REDACTED KEY]')
     .replace(/\b(Bearer\s+)\S+/gi, '$1[REDACTED]')
-    .replace(/\b(?:sk-[\w-]{12,}|gh[pousr]_[\w]{12,})\b/g, '[REDACTED]')
+    .replace(/\b(?:sk-[\w-]{12,}|gh[pousr]_[\w]{12,}|npm_[A-Za-z0-9]{20,})\b/g, '[REDACTED]')
     .replace(/((?:api[_-]?key|access[_-]?token|password|secret)\s*[=:]\s*["']?)[^\s"',;]+/gi, '$1[REDACTED]');
 }
 
