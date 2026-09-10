@@ -116,7 +116,7 @@ export default function (pi: ExtensionAPI) {
       inFlight = controller;
       const epoch = generation;
       const alive = () => !controller.signal.aborted && epoch === generation;
-      const stopIndicator = startIndicator(ctx);
+      const stopIndicator = startIndicator(ctx, t(language, 'looking'), t(language, 'cancelHint'));
       let timer: ReturnType<typeof setTimeout> | undefined;
       let timedOut = false;
       let publishLocal: (() => Promise<void>) | undefined;
@@ -179,9 +179,9 @@ export default function (pi: ExtensionAPI) {
         const payload = JSON.stringify({ interfaceLanguage: language === 'zh' ? 'Chinese' : 'English', runtimeState,
           observedAt: data.observedAt, taskStartedAt: data.taskStartedAt, taskElapsedMinutes: data.taskElapsedMinutes,
           explicitProgress: data.progress, status: data.status, limitations: data.limitations,
-          warning: data.warning, evidence: data.evidence }, null, 2);
+          warning: data.warning, evidence: data.evidence });
         if (arg === 'preview') {
-          await ctx.ui.editor(t(language, 'previewTitle'), payload);
+          await ctx.ui.editor(t(language, 'previewTitle'), JSON.stringify(JSON.parse(payload), null, 2));
           await publish();
           return;
         }

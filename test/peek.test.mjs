@@ -123,7 +123,8 @@ test('model progress requires bounded estimates and cited evidence', () => {
   const card = compactCard(data, summary);
   assert.ok(card.some(line => line.includes('60% · estimated · medium confidence')));
   assert.ok(card.some(line => line.includes('~10 min–25 min')));
-  assert.equal(card.length, 8);
+  assert.equal(card.length, 6);
+  assert.ok(!card.some(line => /^(Done|Blocker)  /.test(line)));
 });
 
 test('language defaults to English, persists Chinese, and changes card labels', async () => fixture(async () => {
@@ -205,6 +206,28 @@ test('command local mode / consent / model request isolation / clear', async () 
   await remote.callbacks.peek('clear', remote.ctx);
   assert.equal(remote.widgets.at(-1), undefined);
   presence.stop();
+}));
+
+test('local tool facts appear in results but never in the actual model request or preview', async () => fixture(async dir => {
+  let payload = '', preview = '';
+  const h = harness(dir, { consent: true, complete: async (_model, context) => {
+    payload = context.messages[0].content[0].text;
+    return { stopReason: 'stop', content: [{ type: 'text', text: '{}' }] };
+  } });
+  h.ctx.sessionManager.getBranch = () => [msg('u', null, 'user', 'Run tests'),
+    msg('a', 'u', 'assistant', [{ type: 'toolCall', id: 'w', name: 'write', arguments: { path: 'LOCAL_ONLY.ts', content: 'PRIVATE FILE BODY' } },
+      { type: 'toolCall', id: 'b', name: 'bash', arguments: { command: 'PRIVATE COMMAND' } }]),
+    msg('r', 'a', 'toolResult', 'file written', { toolCallId: 'w', toolName: 'write' }),
+    msg('s', 'r', 'toolResult', 'Error: LOCAL_ONLY_ERROR password=secretvalue', { toolCallId: 'b', toolName: 'bash', isError: true })];
+  await h.callbacks.peek('self', h.ctx);
+  assert.equal(h.calls(), 1);
+  assert.match(h.entries[0].data.lines.join('\n'), /LOCAL_ONLY.ts/);
+  assert.match(h.entries[0].data.lines.join('\n'), /LOCAL_ONLY_ERROR/);
+  assert.ok(!/LOCAL_ONLY|PRIVATE|secretvalue/.test(payload));
+  assert.ok(!JSON.parse(payload).local);
+  h.ctx.ui.editor = async (_title, content) => { preview = content; };
+  await h.callbacks.peek('preview', h.ctx);
+  assert.ok(!/LOCAL_ONLY|PRIVATE|secretvalue/.test(preview));
 }));
 
 test('configured summary model overrides the current Pi model without switching the session model', async () => fixture(async dir => {
@@ -403,6 +426,19 @@ test('Claude and Codex adapters discover only live same-directory sessions and n
     const output = execFileSync(process.execPath, [cli, 'peek', 'claude'], { cwd: dir, env: process.env, encoding: 'utf8' });
     assert.match(output, /Other session · ● Working · claude/);
     assert.match(output, /Goal  Build API/);
+    assert.ok(!output.includes('\x1b'));
+    for (const language of ['en', 'zh']) {
+      setLanguage(language);
+      const script = `Object.defineProperty(process.stdout, 'isTTY', { value: true });
+        process.argv = [process.execPath, ${JSON.stringify(cli)}, 'peek', 'claude'];
+        await import(${JSON.stringify(new URL('../bin/agent-peek.mjs', import.meta.url).href)});`;
+      const pretty = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
+        cwd: dir, env: { ...process.env, TERM: 'xterm', NO_COLOR: '1' }, encoding: 'utf8',
+      });
+      assert.match(pretty, /Agent Peek/);
+      assert.match(pretty, language === 'en' ? /Goal +Build API/ : /目标 +Build API/);
+      assert.ok(!pretty.includes('\x1b'));
+    }
   } finally { active.forEach(p => p.stop()); }
 }));
 
@@ -477,12 +513,13 @@ test('color contrast in dark/light palettes; inaccessible/unknown pairs use bold
     bold: s => `<bold>${s}</bold>`, fg: (_, s) => `<fg>${s}</fg>`, bg: (_, s) => `<bg>${s}</bg>`,
   });
   for (const pair of [[[0, 0, 0], [255, 255, 255]], [[255, 255, 255], [0, 0, 0]]]) {
-    assert.match(styleLine(theme(...pair), 'Goal', 'accent'), /<bg>/);
+    assert.equal(styleLine(theme(...pair), 'Goal', 'accent', true, pair[1]), '<fg><bold>Goal</bold></fg>');
   }
-  assert.equal(styleLine(theme([120, 120, 120], [125, 125, 125]), 'Goal', 'accent'), '<bold>Goal</bold>');
+  assert.equal(styleLine(theme([120, 120, 120], [125, 125, 125]), 'Goal', 'accent', true, [125, 125, 125]), '<bold>Goal</bold>');
+  assert.equal(styleLine(theme([0, 0, 0], [255, 255, 255]), 'Goal', 'accent'), '<bold>Goal</bold>');
   const prior = process.env.NO_COLOR;
   try {
     process.env.NO_COLOR = '1';
-    assert.equal(styleLine(theme([0, 0, 0], [255, 255, 255]), 'Goal', 'accent'), '<bold>Goal</bold>');
+    assert.equal(styleLine(theme([0, 0, 0], [255, 255, 255]), 'Goal', 'accent', true, [255, 255, 255]), '<bold>Goal</bold>');
   } finally { if (prior === undefined) delete process.env.NO_COLOR; else process.env.NO_COLOR = prior; }
 });

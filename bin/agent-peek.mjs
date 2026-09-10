@@ -38,8 +38,19 @@ try {
   const data = await readAgentSession(session, cwd);
   const lines = compactCard(data, undefined, session.activity, language);
   lines[0] = `${t(language, 'otherSession')} · ${lines[0]}`;
-  const bold = process.stdout.isTTY && !process.env.NO_COLOR ? text => `\x1b[1m${text}\x1b[22m` : text => text;
-  console.log(lines.map(bold).join('\n'));
+  const terminal = process.stdout.isTTY && process.env.TERM !== 'dumb';
+  const bold = terminal && !process.env.NO_COLOR ? text => `\x1b[1m${text}\x1b[22m` : text => text;
+  if (terminal) {
+    console.log(`\n${bold('Agent Peek')}\n${lines[0]}\n`);
+    // Fixed labels contain only Latin, Han and punctuation; no arbitrary terminal text.
+    const labelWidth = label => label.length + (label.match(/\p{Script=Han}/gu)?.length ?? 0);
+    const fields = lines.slice(1).map(line => line.split(/ {2,}/));
+    const width = Math.max(...fields.map(([label]) => labelWidth(label)));
+    for (const [label, ...value] of fields) {
+      console.log(`${bold(label)}${' '.repeat(width - labelWidth(label) + 2)}${value.join('  ')}`);
+    }
+    console.log();
+  } else console.log(lines.join('\n'));
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);

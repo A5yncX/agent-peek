@@ -1,7 +1,7 @@
 import { open, stat } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { extname } from 'node:path';
-import { readSession, sameDirectory, snapshot, clip } from './core.ts';
+import { readSession, sameDirectory, snapshot, clip, localCall, localResult } from './core.ts';
 import { liveSessions } from './presence.ts';
 
 const MAX_FILE = 64 * 1024 * 1024;
@@ -39,7 +39,9 @@ function claudeEntry(raw, index) {
     timestamp: raw.timestamp, type: 'message', role: result ? 'toolResult' : raw.message.role ?? raw.type,
     text: result ? '' : contentText(content), toolCallId: result?.tool_use_id,
     calls: Array.isArray(content) ? content.filter(x => x?.type === 'tool_use')
-      .map(x => ({ id: String(x.id ?? ''), name: clip(x.name, 80) })) : [],
+      .map(x => ({ id: String(x.id ?? ''), name: clip(x.name, 80), local: localCall(x.name, x.input) })) : [],
+    localResults: Array.isArray(content) ? content.filter(x => x?.type === 'tool_result')
+      .map(x => ({ id: x.tool_use_id, ...localResult(x.content, x.is_error) })) : [],
     isError: result?.is_error === true, stopReason: raw.message.stop_reason,
   };
 }
@@ -52,10 +54,11 @@ function codexEntry(raw, index, parentId) {
   if (p.type === 'message' && ['user', 'assistant'].includes(p.role)) {
     return { ...base, role: p.role, text: contentText(p.content), calls: [], stopReason: p.role === 'assistant' ? 'stop' : undefined };
   }
-  if (p.type === 'function_call') return { ...base, role: 'assistant', text: '',
-    calls: [{ id: String(p.call_id ?? base.id), name: clip(p.name, 80) }], stopReason: 'toolUse' };
-  if (p.type === 'function_call_output') return { ...base, role: 'toolResult', text: '',
-    toolCallId: String(p.call_id ?? ''), toolName: '', calls: [], isError: false };
+  if (['function_call', 'custom_tool_call'].includes(p.type)) return { ...base, role: 'assistant', text: '',
+    calls: [{ id: String(p.call_id ?? base.id), name: clip(p.name, 80), local: localCall(p.name, p.arguments ?? p.input) }], stopReason: 'toolUse' };
+  if (['function_call_output', 'custom_tool_call_output'].includes(p.type)) return { ...base, role: 'toolResult', text: '',
+    toolCallId: String(p.call_id ?? ''), toolName: '', calls: [], isError: false,
+    localResults: [{ id: String(p.call_id ?? ''), ...localResult(p.output, false) }] };
   return null;
 }
 
