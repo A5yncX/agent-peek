@@ -225,6 +225,13 @@ test('configured summary model overrides the current Pi model without switching 
   assert.equal(missing.calls(), 0);
   assert.match(missing.notices.at(-1), /example\/fast-model.*unavailable/);
   assert.equal(missing.entries.length, 1);
+
+  const failing = harness(dir, { consent: true, findModel: () => configured,
+    complete: async () => { throw new Error('500 upstream npm_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234'); } });
+  await failing.callbacks.peek('self', failing.ctx);
+  assert.match(failing.notices.at(-1), /500 upstream/);
+  assert.ok(!failing.notices.at(-1).includes('npm_'));
+  assert.equal(failing.entries.length, 1);
 }));
 
 test('/peek language switches and persists the shared interface language', async () => fixture(async dir => {

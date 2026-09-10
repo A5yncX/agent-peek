@@ -213,7 +213,7 @@ export default function (pi: ExtensionAPI) {
           if (!controller.signal.aborted || timedOut) await publishLocal?.();
           ctx.ui.notify(controller.signal.aborted
             ? t(language, timedOut ? 'timeout' : 'cancelled')
-            : hadLocalFallback ? t(language, 'summaryFailed')
+            : hadLocalFallback ? t(language, 'summaryFailedDetail', clip(error instanceof Error ? error.message : clean(error), 180))
             : clip(error instanceof Error ? error.message : clean(error), 300), 'warning');
         }
       } finally {

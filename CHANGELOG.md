@@ -15,6 +15,7 @@
 - Disabling the per-request AI summary confirmation requires an explicit safety confirmation because later summaries may upload filtered text and incur cost without another prompt.
 - RPC automatically falls back to conversation output because it cannot render Pi overlays.
 - The animated below-editor `👀` is removed before opening either result view.
+- Failed AI summaries now show a short, credential-redacted provider error while retaining the local snapshot.
 
 ### Unchanged safety boundaries
 
