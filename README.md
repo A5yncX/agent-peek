@@ -24,14 +24,14 @@ Read-only progress snapshots. One directory. No context switching.
 │ Other session · ● Working · codex · 10:20:30 snapshot              │
 │                                                                  │
 │ Goal      Compare four extraction models                         │
-│ Current   Testing the third model                                │
-│ Recent · local  src/model.ts · result recorded                    │
-│ Recent · local  bash · result recorded · # pass 12 · # fail 0      │
+│ Stage     Model evaluation · testing the third of four models    │
 │ Done      Two model combinations completed                       │
+│ Next      Test the final model, then compare results             │
 │                                                                  │
 │ Progress  ██████░░░░ 60% · estimated · medium confidence           │
 │ ETA       ~15 min–35 min                                          │
 │ Basis     2/4 recorded; third stage active; 28 minutes elapsed     │
+│ Recent · local  bash · result recorded · # pass 12 · # fail 0      │
 │ Enter / Esc / q: close                                            │
 ╰──────────────────────────────────────────────────────────────────╯
 ```
@@ -129,11 +129,11 @@ Every instrumented host writes a small heartbeat under `~/.agent-peek/`. It cont
 
 ## Output
 
-Window and conversation views prioritize the current task, up to three recent local tool results, and known waiting/blocker states. Recognized file-change calls show paths; shell results can show recorded exit codes, test counts and short errors. A recorded tool result is not proof the task is complete, and a recent error is not automatically an unresolved blocker. Missing done/progress/ETA/blocker fields are omitted rather than filling the card with “unknown”. Only the title and current work are emphasized. The CLI uses aligned labels in interactive terminals and keeps redirected output plain and unframed.
+Window and conversation views prioritize the overall goal, current task phase, completed milestones, next planned step, and progress/ETA. Pending tools never replace the AI's phase explanation. Tool activity and up to two recent local results are supplementary rows at the bottom. Missing numeric estimates are explicitly labelled as insufficient evidence; unsupported done/next/blocker claims remain omitted. A recorded tool result is not proof the task is complete, and a recent error is not automatically an unresolved blocker. Only the title and current work are emphasized. The CLI uses aligned labels in interactive terminals and keeps redirected output plain and unframed.
 
-The AI summary may estimate progress from at least two meaningful signals: explicit completed/total counts, checklist state, ordered stages, timestamped progress changes, and elapsed task time. ETA requires observed pace or comparable completed units. Process liveness, elapsed time alone, ordinary fractions, scores, and token usage are insufficient. Every estimate is labelled with confidence and a short basis; without enough evidence the corresponding field is omitted.
+The AI summary may estimate progress from at least two meaningful signals: explicit completed/total counts, checklist state, ordered stages, timestamped progress changes, and elapsed task time. ETA requires observed pace or comparable completed units. Process liveness, elapsed time alone, ordinary fractions, scores, and token usage are insufficient. Every estimate is labelled with confidence and a short basis; without enough evidence, the card explains why no reliable estimate is available rather than inventing a percentage.
 
-`/peek local` never asks a model to estimate. It displays local tool facts and explicit recorded counts; unsupported estimates are omitted. Recorded counts and model estimates are evidence-based approximations, not independently verified runtime facts.
+`/peek local` never asks a model to estimate. It displays recorded task text, local tool facts and explicit recorded counts; unsupported estimates are labelled as unavailable. Recorded counts and model estimates are evidence-based approximations, not independently verified runtime facts.
 
 In Pi, `👀` animates below the editor alongside a localized lookup label and `/peek cancel` hint, then disappears. `TERM=dumb` disables the animation. The result opens in the configured window or conversation view. Claude/Codex use their native command/skill working UI and return the shared CLI output.
 
@@ -152,7 +152,7 @@ Report security issues using [`SECURITY.md`](SECURITY.md); never attach a real t
 
 ### Reading and latency
 
-AI remains the default when a model is available and consent is granted. Evidence selection now prioritizes the latest request and substantive assistant text over empty tool-result records; the evidence JSON budget is 10,000 characters (previously 16,000). Model payloads use compact JSON; preview stays formatted. Files still receive a full bounded read to preserve branch and identity checks—no stale snapshot cache or unsafe tail-only reads.
+AI remains the default when a model is available and consent is granted. Evidence selection preserves the task request, recorded plan and latest task explanation alongside recent messages. Exact continuation prompts such as “continue” retain the preceding task goal and start time; a new substantive request starts a new task scope. Selection prioritizes substantive text over empty tool-result records; the evidence JSON budget is 10,000 characters (previously 16,000). Model payloads use compact JSON; preview stays formatted. Files still receive a full bounded read to preserve branch and identity checks—no stale snapshot cache or unsafe tail-only reads.
 
 Run `node test/bench-read.mjs` for a synthetic 16 MiB read benchmark. This measures local parsing only, not model response time.
 

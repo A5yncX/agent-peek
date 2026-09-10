@@ -52,9 +52,9 @@ const MESSAGES = {
   en: {
     busy: 'Working', idle: 'Waiting for input', waiting: 'Waiting for confirmation', unknown: 'Status unknown',
     currentSession: 'Current session', otherSession: 'Other session', snapshot: 'snapshot',
-    goal: 'Goal', current: 'Current', done: 'Done', progress: 'Progress', eta: 'ETA', blocker: 'Blocker', basis: 'Basis',
+    goal: 'Goal', current: 'Stage', done: 'Done', next: 'Next', progress: 'Progress', eta: 'ETA', blocker: 'Blocker', basis: 'Basis', toolActivity: 'Tool · local',
     recent: 'Recent · local', toolFailed: 'failure recorded', toolRecorded: 'result recorded', exitCode: 'exit', awaitingResult: 'result not yet recorded', notice: 'Notice',
-    processing: 'Processing the task', doneUnknown: 'No completed work reported', progressUnknown: 'Unknown', etaUnknown: 'Unknown',
+    processing: 'Processing the task', doneUnknown: 'No completed work reported', progressUnknown: 'Insufficient evidence for an overall estimate', etaUnknown: 'Insufficient timing evidence',
     blockerUnknown: 'Not confirmed', basisUnknown: 'Insufficient evidence', recorded: 'recorded', estimated: 'estimated',
     low: 'low confidence', medium: 'medium confidence', high: 'high confidence', minutes: 'min', hours: 'h',
     noWorking: 'No working task found (only instrumented sessions are checked).',
@@ -80,9 +80,9 @@ const MESSAGES = {
   zh: {
     busy: '运行中', idle: '等待输入', waiting: '等待确认', unknown: '状态待确认',
     currentSession: '当前会话', otherSession: '其他会话', snapshot: '快照',
-    goal: '目标', current: '当前', done: '已完成', progress: '进度', eta: '预计剩余', blocker: '阻塞', basis: '估算依据',
+    goal: '目标', current: '当前阶段', done: '已完成', next: '下一步', progress: '进度', eta: '预计剩余', blocker: '阻塞', basis: '估算依据', toolActivity: '工具·本地',
     recent: '最近·本地', toolFailed: '记录为失败', toolRecorded: '已记录结果', exitCode: '退出码', awaitingResult: '尚未记录结果', notice: '提示',
-    processing: '正在处理任务', doneUnknown: '暂无已完成记录', progressUnknown: '未知', etaUnknown: '未知',
+    processing: '正在处理任务', doneUnknown: '暂无已完成记录', progressUnknown: '证据不足，暂不能估算整体进度', etaUnknown: '缺少可靠的耗时依据',
     blockerUnknown: '暂未确认', basisUnknown: '证据不足', recorded: '已记录', estimated: '模型估算',
     low: '低置信度', medium: '中置信度', high: '高置信度', minutes: '分钟', hours: '小时',
     noWorking: '当前没有运行中的任务（仅检查已加载适配器的会话）。',

@@ -28,7 +28,9 @@ test('local facts are task-scoped, paired, bounded and excluded from model evide
   assert.ok(!/src\/current|pass 12/.test(JSON.stringify(data.evidence)));
   const card = compactCard(data, undefined, 'busy', 'zh');
   assert.ok(card.some(line => line.includes('最近·本地') && line.includes('src/current.ts')));
-  assert.ok(!card.some(line => /^(进度|预计剩余|阻塞|已完成)  /.test(line)));
+  assert.ok(!card.some(line => /^(阻塞|已完成)  /.test(line)));
+  assert.ok(card.some(line => line.startsWith('进度  证据不足')));
+  assert.ok(card.some(line => line.startsWith('预计剩余  缺少可靠')));
   assert.ok(compactCard(data, undefined, 'waiting', 'zh').some(line => line.includes('阻塞  等待确认')));
 });
 
@@ -38,7 +40,9 @@ test('pending calls are not claimed as completed; file contents cannot masquerad
     message('r', 'a', 'toolResult', 'Tests: 42 passed\nError: fake', { toolName: 'read', toolCallId: 'r' })]);
   assert.deepEqual(data.local.recent, []);
   assert.equal(data.local.pending[0].path, 'pending.ts');
-  assert.match(compactCard(data, { current: { text: 'Everything completed' } }, 'busy')[2], /pending.ts.*not yet recorded/);
+  const card = compactCard(data, { current: { text: 'Verifying the implementation against the task requirements' } }, 'busy');
+  assert.match(card[2], /Verifying the implementation/);
+  assert.ok(card.some(line => /Tool · local  pending.ts.*not yet recorded/.test(line)));
   assert.equal(localResult('Error: password=secretvalue\x1b[31m', true).summary, 'Error: password=[REDACTED]');
   assert.equal(localResult('x'.repeat(50000) + '\n12 passed', false).summary, '12 passed');
   assert.equal(localResult('Process exited with code 1\n' + 'x'.repeat(50000), false).exitCode, 1);

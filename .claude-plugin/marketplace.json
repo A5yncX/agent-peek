@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "agent-peek-local",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Local Agent Peek marketplace",
   "owner": { "name": "A5yncX" },
   "plugins": [{

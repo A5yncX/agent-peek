@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+
+- Restored task-first snapshots: goal, current phase, milestones, next planned step, and progress/ETA precede local tool details.
+- Fixed pending tool calls overwriting AI phase explanations; limited supplementary recent records to two.
+- Preserved task goals and recorded plans in summary evidence, including across explicit continuation prompts.
+- Added evidence-cited next-step summaries and explanatory fallbacks for unavailable numeric estimates; allowed longer task descriptions.
+
 ## 0.5.0
 
 ### Reading and presentation

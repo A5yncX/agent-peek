@@ -203,7 +203,7 @@ export default function (pi: ExtensionAPI) {
         const response = await ctx.modelRegistry.complete(model, {
           systemPrompt: SUMMARY_PROMPT,
           messages: [{ role: 'user', content: [{ type: 'text', text: payload }], timestamp: Date.now() }],
-        }, { signal: controller.signal, maxTokens: 1200, cacheRetention: 'none', sessionId: randomUUID() });
+        }, { signal: controller.signal, maxTokens: 1800, cacheRetention: 'none', sessionId: randomUUID() });
         if (!alive()) return;
         if (response.stopReason !== 'stop') throw new Error(t(language, 'summaryFailed'));
         const text = response.content.filter(c => c.type === 'text').map(c => c.text).join('\n');
